@@ -565,13 +565,15 @@ Aplica los 8 patrones fundamentales: empuje horizontal, empuje vertical, jalón 
 ## PRIORIDADES ESTA SEMANA
 Los 3 cambios más impactantes, en orden de importancia. Específicos, accionables, con fecha.
 
-Termina con un párrafo corto de motivación genuina — basado en el principio de sostenibilidad, no de hype.`;
+INSTRUCCIÓN CRÍTICA DE COMPLETITUD: Tienes 16000 tokens disponibles — úsalos todos si es necesario. Debes completar el 100% de estas secciones SIN EXCEPCIÓN: Diagnóstico Integral, Programa semanas 1-8 completo, Movilidad y Calentamiento, Plan Nutricional con cálculos, Protocolo de Sueño y Recuperación, Estrategia de Adherencia, Indicadores de Progreso, y Prioridades esta semana. Si detectas que te estás extendiendo demasiado en una sección, sé más conciso pero NUNCA omitas ninguna sección. El plan DEBE tener todas las partes para ser útil.
+
+Termina con un párrafo de motivación genuina basado en sostenibilidad.`;
 
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:8000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:24000,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Error API '+res.status);}
     const data=await res.json();
