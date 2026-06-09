@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente Integral de Acondicionamiento Humano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:#1D9E75; --green-d:#0F6E56; --green-l:#E8F8F2; --green-deep:#064535;
+  --blue:#1A6FBF; --blue-l:#EBF4FF;
+  --amber:#B8620A; --amber-l:#FEF3E2;
+  --red:#C93535; --red-l:#FEF0F0;
+  --purple:#6B4FBB; --purple-l:#F0ECFF;
+  --bg:#F7F7F5; --white:#FFFFFF;
+  --text:#111110; --muted:#6B6A63; --faint:#A8A79F;
+  --border:#E5E4DF; --border-d:#CFCEC8;
+  --r:10px; --r-lg:16px; --r-xl:20px;
+  --shadow:0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* ── API SCREEN ── */
+#api-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:linear-gradient(135deg,#0a2018 0%,#0d3525 50%,#0a2018 100%)}
+.api-card{background:var(--white);border-radius:var(--r-xl);padding:3rem 2.5rem;max-width:460px;width:100%;text-align:center;box-shadow:var(--shadow-lg)}
+.api-logo{display:inline-flex;align-items:center;gap:8px;margin-bottom:2rem}
+.api-logo-icon{width:40px;height:40px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.api-logo-text{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-0.01em}
+.api-logo-text span{color:var(--green)}
+.api-card h1{font-size:24px;font-weight:800;margin-bottom:8px;letter-spacing:-0.03em}
+.api-card p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:2rem}
+.api-input-wrap{position:relative;margin-bottom:12px}
+.api-input-wrap input{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:var(--r);font-size:14px;font-family:monospace;background:var(--bg);transition:border .2s;letter-spacing:.05em}
+.api-input-wrap input:focus{outline:none;border-color:var(--green);background:var(--white)}
+.api-note{font-size:12px;color:var(--faint);margin-top:1.25rem;line-height:1.6}
+.api-note a{color:var(--green);text-decoration:none}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh}
+.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:10px}
+.topbar-icon{width:30px;height:30px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.topbar-name{font-size:13px;font-weight:700;letter-spacing:-0.01em}
+.topbar-name span{color:var(--green)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.phase-chip{font-size:11px;font-weight:600;color:var(--muted);background:var(--bg);padding:5px 12px;border-radius:20px;border:1px solid var(--border);letter-spacing:.02em}
+.key-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.key-btn:hover{background:var(--bg);color:var(--text)}
+.progress-bar{height:3px;background:var(--border)}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green),#2DD4A0);transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* ── MAIN ── */
+.main{max-width:660px;margin:0 auto;padding:2.5rem 1.5rem 5rem}
+
+/* ── STEP DOTS ── */
+.dots-row{display:flex;gap:4px;margin-bottom:2rem}
+.dot{height:3px;border-radius:2px;background:var(--border);transition:all .3s;flex:1}
+.dot.done{background:var(--green-l);background:linear-gradient(90deg,var(--green-d),var(--green))}
+.dot.active{background:var(--green);box-shadow:0 0 8px rgba(29,158,117,.4)}
+
+/* ── PAGE HEADER ── */
+.phase-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-d);background:var(--green-l);padding:4px 12px;border-radius:20px;margin-bottom:14px;border:1px solid rgba(29,158,117,.15)}
+.page-title{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.2;margin-bottom:8px}
+.page-sub{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:2rem}
+
+/* ── INFO BOXES ── */
+.mission-box{background:linear-gradient(135deg,var(--green-deep) 0%,#0d3525 100%);border-radius:var(--r-lg);padding:20px 24px;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.mission-box::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.05)}
+.mission-label{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:8px}
+.mission-text{font-size:14px;color:rgba(255,255,255,.92);line-height:1.7;font-style:italic;font-weight:400}
+
+.principle-box{background:var(--green-l);border-left:3px solid var(--green);border-radius:var(--r);padding:14px 18px;margin-bottom:1.5rem;font-size:13px;color:var(--green-deep);line-height:1.7;border:1px solid rgba(29,158,117,.15);border-left:3px solid var(--green)}
+.alert-box{background:var(--amber-l);border-left:3px solid var(--amber);border-radius:var(--r);padding:14px 18px;margin-bottom:1.5rem;font-size:13px;color:#4A2800;line-height:1.7;border:1px solid rgba(184,98,10,.15);border-left:3px solid var(--amber)}
+.alert-box strong{color:#2E1800;font-weight:700}
+
+/* ── FORM ── */
+.field{margin-bottom:1.25rem}
+.field>label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:7px;letter-spacing:.02em;text-transform:uppercase}
+.field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r);font-size:14px;font-family:'Inter',sans-serif;background:var(--white);color:var(--text);transition:border .2s,box-shadow .2s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.1)}
+.field textarea{min-height:80px;resize:vertical;line-height:1.6}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* ── CHOICE BUTTONS ── */
+.cgrid{display:grid;gap:8px;margin-bottom:.5rem}
+.cgrid.c2{grid-template-columns:1fr 1fr}
+.cgrid.c3{grid-template-columns:1fr 1fr 1fr}
+.cb{padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;text-align:left;background:var(--white);color:var(--text);font-size:13px;transition:all .15s;line-height:1.4;font-family:'Inter',sans-serif;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.cb:hover{border-color:var(--border-d);background:var(--bg);transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.08)}
+.cb.sel{border-color:var(--green);background:var(--green-l);color:var(--green-deep);box-shadow:0 0 0 3px rgba(29,158,117,.1)}
+.cb .ct{font-weight:600;font-size:13px}
+.cb .cs{font-size:11px;color:var(--muted);margin-top:3px}
+.cb.sel .cs{color:var(--green-d)}
+
+/* ── SCALE ── */
+.scale-wrap{margin-bottom:1.25rem}
+.ql{font-size:14px;font-weight:500;color:var(--text);margin-bottom:10px;line-height:1.5}
+.srow{display:flex;gap:4px;margin-bottom:4px}
+.sb{flex:1;padding:9px 3px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;text-align:center;background:var(--white);font-size:12px;font-weight:500;color:var(--muted);transition:all .15s;font-family:'Inter',sans-serif}
+.sb:hover{background:var(--bg);border-color:var(--border-d)}
+.sb.sel{border-color:var(--green);background:var(--green-l);color:var(--green-d);font-weight:700;box-shadow:0 0 0 2px rgba(29,158,117,.15)}
+.slabels{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-bottom:.75rem;font-weight:500;letter-spacing:.02em}
+
+/* ── YES/NO ── */
+.yn-wrap{margin-bottom:1.1rem}
+.yn-row{display:flex;gap:10px}
+.yn{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;text-align:center;background:var(--white);font-size:14px;font-weight:600;color:var(--text);transition:all .15s;font-family:'Inter',sans-serif}
+.yn:hover{background:var(--bg)}
+.yn-si{border-color:var(--red);background:var(--red-l);color:var(--red)}
+.yn-no{border-color:var(--green);background:var(--green-l);color:var(--green-d)}
+
+/* ── FUNC CARDS ── */
+.func-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.func-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.func-inst{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;background:var(--bg);padding:10px 12px;border-radius:8px;border-left:2px solid var(--border-d)}
+
+/* ── NAV ── */
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--border)}
+.btn-back{background:none;border:1.5px solid var(--border);border-radius:var(--r);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;padding:11px 20px;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-back:hover{background:var(--bg);color:var(--text);border-color:var(--border-d)}
+.step-count{font-size:12px;color:var(--faint);font-weight:500}
+.btn-next{background:linear-gradient(135deg,var(--green) 0%,var(--green-d) 100%);color:white;border:none;border-radius:var(--r);padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;box-shadow:0 4px 12px rgba(29,158,117,.3),0 1px 3px rgba(29,158,117,.2);letter-spacing:-.01em}
+.btn-next:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(29,158,117,.4)}
+.btn-next:active{transform:translateY(0)}
+
+/* ── GENERATING ── */
+.gen-wrap{text-align:center;padding:4rem 1rem}
+.gen-ring{width:56px;height:56px;border:3px solid var(--green-l);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 1.5rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gen-title{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:10px}
+.gen-sub{font-size:14px;color:var(--muted);line-height:1.7;max-width:380px;margin:0 auto 2.5rem}
+.gen-steps{list-style:none;text-align:left;max-width:340px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.gen-steps li{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+.gen-steps li .dot-s{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:all .3s}
+.gen-steps li.done .dot-s{background:var(--green)}
+.gen-steps li.done{color:var(--text)}
+.gen-steps li.active{color:var(--text);font-weight:600}
+.gen-steps li.active .dot-s{background:var(--green);animation:pulse .9s ease-in-out infinite;box-shadow:0 0 0 3px rgba(29,158,117,.2)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
+
+/* ── RESULT ── */
+.result-wrap{padding:0}
+
+/* Result Header */
+.result-cover{background:linear-gradient(135deg,#052E1C 0%,#0a4028 60%,#073322 100%);border-radius:var(--r-xl);padding:2.5rem;margin-bottom:2rem;position:relative;overflow:hidden}
+.result-cover::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(29,158,117,.15)}
+.result-cover::after{content:'';position:absolute;bottom:-30px;left:20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04)}
+.result-eyebrow{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:10px}
+.result-name{font-size:30px;font-weight:800;color:white;letter-spacing:-.03em;margin-bottom:6px;line-height:1.2;position:relative}
+.result-date{font-size:12px;color:rgba(255,255,255,.45);margin-bottom:1.5rem}
+.result-badges{display:flex;flex-wrap:wrap;gap:8px;position:relative}
+.rbadge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px}
+.rb-green{background:rgba(29,158,117,.25);color:#6FEFC0;border:1px solid rgba(29,158,117,.3)}
+.rb-blue{background:rgba(26,111,191,.25);color:#7BC4FF;border:1px solid rgba(26,111,191,.3)}
+.rb-amber{background:rgba(184,98,10,.25);color:#FFB84D;border:1px solid rgba(184,98,10,.3)}
+.rb-red{background:rgba(201,53,53,.25);color:#FF8A8A;border:1px solid rgba(201,53,53,.3)}
+
+/* Result Body */
+.result-body{font-size:14px;line-height:1.85;color:var(--text)}
+.result-body h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:2.5rem 0 1rem;color:var(--text);display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:2px solid var(--border)}
+.result-body h2::before{content:'';display:inline-block;width:4px;height:20px;background:var(--green);border-radius:2px;flex-shrink:0}
+.result-body h3{font-size:15px;font-weight:700;margin:1.5rem 0 .6rem;color:var(--green-d)}
+.result-body p{margin-bottom:.85rem}
+.result-body ul{padding-left:1.25rem;margin-bottom:.85rem}
+.result-body li{margin-bottom:5px;line-height:1.7}
+.result-body strong{color:var(--text);font-weight:700}
+.result-body em{font-style:italic;color:var(--muted)}
+.result-body hr{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+
+/* Tables in result */
+.result-body table{width:100%;border-collapse:collapse;margin:1rem 0 1.25rem;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);font-size:13px}
+.result-body thead tr{background:var(--green-deep);color:white}
+.result-body thead th{padding:10px 14px;text-align:left;font-weight:700;font-size:12px;letter-spacing:.03em}
+.result-body tbody tr{border-bottom:1px solid var(--border)}
+.result-body tbody tr:nth-child(even){background:var(--bg)}
+.result-body tbody tr:hover{background:var(--green-l)}
+.result-body tbody td{padding:9px 14px;vertical-align:top;line-height:1.5}
+.result-body tbody td:first-child{font-weight:600;color:var(--text)}
+
+/* Action row */
+.action-row{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px}
+.btn-act{border:none;border-radius:var(--r);padding:12px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;letter-spacing:-.01em}
+.btn-act:hover{transform:translateY(-1px)}
+.btn-print{background:linear-gradient(135deg,var(--green),var(--green-d));color:white;box-shadow:0 4px 12px rgba(29,158,117,.3)}
+.btn-copy{background:linear-gradient(135deg,var(--blue),#1457A0);color:white;box-shadow:0 4px 12px rgba(26,111,191,.25)}
+.btn-new{background:var(--white);color:var(--muted);border:1.5px solid var(--border)}
+.btn-new:hover{color:var(--text);border-color:var(--border-d)}
+
+.error-box{background:var(--red-l);border:1.5px solid var(--red);border-radius:var(--r-lg);padding:20px 24px;margin-bottom:1.5rem;font-size:14px;color:var(--red);line-height:1.7}
+.error-box strong{color:#7A1C1C;font-weight:700}
+.error-box a{color:var(--red)}
+
+/* Print styles */
+@media print{
+  .topbar,.progress-bar,.dots-row,.nav,.action-row,.key-btn{display:none!important}
+  .main{max-width:100%;padding:0}
+  body{background:white}
+  .result-cover{background:#064535!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .result-body table{box-shadow:none;border:1px solid var(--border)}
+}
+
+@media(max-width:520px){
+  .g2,.g3{grid-template-columns:1fr}
+  .cgrid.c3{grid-template-columns:1fr 1fr}
+  .main{padding:1.5rem 1rem 4rem}
+  .result-name{font-size:24px}
+  .result-cover{padding:1.75rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ── API SCREEN ── -->
+<div id="api-screen">
+  <div class="api-card">
+    <div class="api-logo">
+      <div class="api-logo-icon">🏋️</div>
+      <div class="api-logo-text">Agente <span>Acondicionamiento</span> Humano</div>
+    </div>
+    <h1>Bienvenido al sistema</h1>
+    <p>Ingresa tu API Key de Anthropic para activar el motor de inteligencia. Se guarda solo en este dispositivo.</p>
+    <div class="api-input-wrap">
+      <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off">
+    </div>
+    <button class="btn-next" style="width:100%;justify-content:center" onclick="saveApiKey()">Activar sistema →</button>
+    <p class="api-note">Obtén tu key en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys</p>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-icon">🏋️</div>
+      <div class="topbar-name">Agente <span>Acondicionamiento</span> Humano</div>
+    </div>
+    <div class="topbar-right">
+      <div class="phase-chip" id="phase-chip">Fase 1</div>
+      <button class="key-btn" onclick="changeKey()">⚙ API Key</button>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="prog" style="width:4%"></div></div>
+  <div class="main">
+    <div class="dots-row" id="dots-row"></div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let step = 0, D = {}, apiKey = '';
+const PHASES = [
+  {p:'Fase 1',l:'Datos personales'},{p:'Fase 1',l:'Antropometría'},
+  {p:'Fase 2',l:'Objetivo real'},{p:'Fase 1',l:'Salud · PAR-Q+'},
+  {p:'Fase 1',l:'Historial deportivo'},{p:'Fase 3',l:'Movilidad funcional'},
+  {p:'Fase 3',l:'Fuerza funcional'},{p:'Fase 3',l:'Resistencia y equilibrio'},
+  {p:'Fase 1',l:'Sueño y recuperación'},{p:'Fase 1',l:'Estrés y psicología'},
+  {p:'Fase 8',l:'Nutrición'},{p:'Fase 5',l:'Contexto y recursos'},
+  {p:'Fase 4',l:'Diagnóstico final'}
+];
+const T = PHASES.length;
+
+// ── API KEY ────────────────────────────────────────────────────────────────
+function saveApiKey(){
+  const v = document.getElementById('api-key-input').value.trim();
+  if(!v.startsWith('sk-ant')){alert('La API key debe comenzar con sk-ant-...');return;}
+  apiKey = v; localStorage.setItem('aah_key', v);
+  document.getElementById('api-screen').style.display='none';
+  document.getElementById('app').style.display='block'; render();
+}
+function changeKey(){
+  localStorage.removeItem('aah_key'); apiKey='';
+  document.getElementById('api-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+window.onload = ()=>{
+  const s=localStorage.getItem('aah_key');
+  if(s&&s.startsWith('sk-ant')){
+    apiKey=s;
+    document.getElementById('api-screen').style.display='none';
+    document.getElementById('app').style.display='block'; render();
+  }
+  document.getElementById('api-key-input').addEventListener('keypress',e=>{if(e.key==='Enter')saveApiKey();});
+};
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+const sv=id=>document.getElementById(id)?.value||'';
+function single(k,v){D[k]=v;document.querySelectorAll(`[data-s="${k}"]`).forEach(b=>b.classList.toggle('sel',b.dataset.v===v));}
+function multi(k,v){if(!D[k])D[k]=[];const i=D[k].indexOf(v);i>-1?D[k].splice(i,1):D[k].push(v);document.querySelectorAll(`[data-m="${k}"]`).forEach(b=>b.classList.toggle('sel',(D[k]||[]).includes(b.dataset.v)));}
+function scale(k,v){D[k]=v;document.querySelectorAll(`[data-sc="${k}"]`).forEach(b=>b.classList.toggle('sel',b.dataset.v==v));}
+function yn(k,v){D[k]=v;const row=document.querySelector(`[data-yr="${k}"]`);if(row){row.querySelectorAll('.yn').forEach(b=>b.className='yn');const t=row.querySelector(`[data-yv="${v}"]`);if(t)t.classList.add(v==='si'?'yn-si':'yn-no');}}
+function SR(key,vals,lbl,l1,l2){return`<div class="scale-wrap"><p class="ql">${lbl}</p><div class="srow">${vals.map(v=>`<button class="sb ${D[key]==v.v?'sel':''}" data-sc="${key}" data-v="${v.v}" onclick="scale('${key}',${v.v})">${v.l}</button>`).join('')}</div>${l1?`<div class="slabels"><span>${l1}</span><span>${l2}</span></div>`:''}</div>`;}
+function cg(key,items,cols,multi_){return`<div class="cgrid c${cols}">${items.map(([v,t,s])=>`<button class="cb ${(multi_?(D[key]||[]).includes(v):D[key]===v)?'sel':''}" data-${multi_?'m':'s'}="${key}" data-v="${v}" onclick="${multi_?'multi':'single'}('${key}','${v}')"><div class="ct">${t}</div>${s?`<div class="cs">${s}</div>`:''}</button>`).join('')}</div>`;}
+
+// ── SAVE ───────────────────────────────────────────────────────────────────
+const FIELDS={0:['nombre','edad','ocupacion'],1:['peso','estatura','cintura','cadera','brazo','muslo'],2:['evento_fecha'],3:['medicamentos','cirugias'],4:['lesiones_detalle'],10:['suplementos'],11:['equipo','info_extra']};
+function saveStep(){(FIELDS[step]||[]).forEach(k=>{const e=document.getElementById(k);if(e)D[k]=e.value;});}
+
+// ── DOTS ───────────────────────────────────────────────────────────────────
+function renderDots(){document.getElementById('dots-row').innerHTML=PHASES.map((_,i)=>`<div class="dot ${i<step?'done':i===step?'active':''}"></div>`).join('');}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function render(){
+  const ph=PHASES[step];
+  document.getElementById('prog').style.width=((step+1)/T*100)+'%';
+  document.getElementById('phase-chip').textContent=ph.p+' · '+ph.l;
+  renderDots();
+  document.getElementById('content').innerHTML=buildPage();
+  restoreScales();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function wrap(phase,title,sub,body){
+  return`<div class="phase-tag">${phase}</div><h1 class="page-title">${title}</h1><p class="page-sub">${sub}</p>${body}<div class="nav"><button class="btn-back" onclick="back()" ${step===0?'style="visibility:hidden"':''}>← Anterior</button><span class="step-count">${step+1} / ${T}</span><button class="btn-next" onclick="next()">${step===T-1?'Generar Plan Maestro ↗':'Continuar →'}</button></div>`;
+}
+function restoreScales(){
+  ['horas_sueno','calidad_sueno','fatiga_manana','estres','motivacion','dias','disp_nutri','nivel_dolor','compromiso'].forEach(k=>{if(D[k]!==undefined)document.querySelectorAll(`[data-sc="${k}"]`).forEach(b=>b.classList.toggle('sel',b.dataset.v==D[k]));});
+}
+
+function buildPage(){
+  if(step===0)return wrap('Fase 1 · Perfilado','Información personal','La base de todo el sistema. Cada dato importa — sé preciso.',`
+    <div class="g2">
+      <div class="field"><label>Nombre completo</label><input id="nombre" placeholder="Tu nombre" value="${D.nombre||''}"></div>
+      <div class="field"><label>Edad (años)</label><input id="edad" type="number" min="10" max="90" placeholder="35" value="${D.edad||''}"></div>
+    </div>
+    <div class="field"><label>Sexo biológico</label>${cg('sexo_bio',[['hombre','Hombre'],['mujer','Mujer'],['prefiero_no','Prefiero no decir']],3,false)}</div>
+    <div class="field"><label>Ocupación</label><select id="ocupacion"><option value="">Selecciona...</option>${[['sedentario','Escritorio / oficina'],['mixto','Mixto (de pie y sentado)'],['fisico_leve','Físico leve'],['fisico_intenso','Físico intenso'],['estudiante','Estudiante'],['hogar','Casa / hogar'],['otro','Otro']].map(([v,t])=>`<option value="${v}" ${D.ocupacion===v?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label>Horario preferido para entrenar</label>${cg('horario',[['manana','🌅 Mañana'],['mediodia','☀️ Mediodía'],['tarde','🌇 Tarde'],['noche','🌙 Noche'],['variable','🔄 Variable']],3,false)}</div>`);
+
+  if(step===1)return wrap('Fase 1 · Antropometría','Medidas corporales','Cíñete en ropa ligera. Estas medidas definen tu punto de partida real.',`
+    <div class="g3">
+      <div class="field"><label>Peso (kg)</label><input id="peso" type="number" step="0.1" placeholder="75.0" value="${D.peso||''}"></div>
+      <div class="field"><label>Estatura (cm)</label><input id="estatura" type="number" placeholder="175" value="${D.estatura||''}"></div>
+      <div class="field"><label>Cintura (cm)</label><input id="cintura" type="number" placeholder="85" value="${D.cintura||''}"></div>
+    </div>
+    <div class="g3">
+      <div class="field"><label>Cadera (cm)</label><input id="cadera" type="number" placeholder="95" value="${D.cadera||''}"></div>
+      <div class="field"><label>Brazo (cm)</label><input id="brazo" type="number" placeholder="34" value="${D.brazo||''}"></div>
+      <div class="field"><label>Muslo (cm)</label><input id="muslo" type="number" placeholder="55" value="${D.muslo||''}"></div>
+    </div>
+    <div class="field"><label>Estimación de % grasa corporal</label>${cg('grasa_est',[['muy_bajo','<10%','Muy magro'],['bajo','10–15%','Atlético'],['normal_h','15–20%','Normal H'],['normal_m','20–25%','Normal M'],['alto','25–30%','Elevado'],['muy_alto','>30%','Muy elevado']],3,false)}</div>
+    <div class="field"><label>Fotos comparativas de inicio</label>${cg('fotos',[['si','✅ Ya las tengo'],['las_tomo','📷 Las tomo hoy'],['no','⏳ Después']],3,false)}</div>`);
+
+  if(step===2)return wrap('Fase 2 · Objetivo','¿Qué quieres lograr realmente?','Tu objetivo declarado y tu objetivo real pueden ser distintos. Aquí lo exploramos con honestidad.',`
+    <div class="mission-box"><div class="mission-label">Misión del sistema</div><div class="mission-text">"Guiar a cada persona hacia su mejor versión física, respetando su contexto, su salud, sus objetivos y su sostenibilidad a largo plazo."</div></div>
+    <div class="field"><label>Objetivo principal</label>${cg('objetivo',[['perdida_grasa','Pérdida de grasa','Reducir % grasa, composición'],['hipertrofia','Hipertrofia','Ganar músculo y tamaño'],['fuerza','Fuerza máxima','Squat, deadlift — números'],['salud','Salud general','Vivir más y mejor'],['rendimiento_hibrido','Rendimiento híbrido','Fuerza + resistencia'],['hyrox','HYROX','Competición funcional'],['crossfit','CrossFit','WODs y movimientos'],['running','Running','5K / 10K / media / maratón'],['reacondicionamiento','Reacondicionamiento','Volver tras inactividad'],['rehabilitacion','Rehabilitación','Post-lesión'],['adulto_mayor','Adulto mayor','Funcionalidad y longevidad'],['calistenia','Calistenia','Planche, muscle-up, L-sit']],2,false)}</div>
+    <div class="field"><label>Plazo para ver resultados significativos</label>${cg('plazo',[['1mes','1 mes'],['3meses','3 meses'],['6meses','6 meses'],['1ano','1 año'],['sin_prisa','Sin prisa']],3,false)}</div>
+    <div class="field"><label>Evento o fecha objetivo (opcional)</label><input id="evento_fecha" placeholder="HYROX marzo, vacaciones julio, sin fecha..." value="${D.evento_fecha||''}"></div>
+    <div class="field"><label>¿Qué has intentado que no funcionó?</label>${cg('no_funciono',[['dietas_yoyo','Dietas yo-yo'],['rutinas_abandonadas','Rutinas abandonadas'],['sin_resultados','Sin resultados visibles'],['exceso_cardio','Solo cardio'],['muchas_lesiones','Muchas lesiones'],['falta_guia','Sin guía clara'],['nada_previo','Nada previo']],2,true)}</div>`);
+
+  if(step===3)return wrap('Fase 1 · Salud','Cuestionario PAR-Q+','Estándar internacional de seguridad para iniciar ejercicio. Un "Sí" no te impide entrenar — nos indica cómo adaptar.',`
+    <div class="alert-box"><strong>¿Por qué esto importa?</strong> Cada respuesta positiva modifica el programa. La metformina, anticoagulantes o condiciones cardíacas cambian la prescripción de intensidad, ejercicios y progresión.</div>
+    ${[['parq1','¿Un médico te ha dicho que tienes condición cardíaca o presión arterial elevada?'],['parq2','¿Sientes dolor o presión en el pecho durante o después del ejercicio?'],['parq3','¿Has tenido mareos, desmayos o pérdida de equilibrio en el último año?'],['parq4','¿Tienes problema óseo, articular o muscular que empeore con el ejercicio?'],['parq5','¿Tomas medicamentos para corazón, presión arterial o diabetes?'],['parq6','¿Tienes diabetes tipo 1 o tipo 2?'],['parq7','¿Tienes enfermedad crónica: tiroides, renal, pulmonar, autoinmune?'],['parq8','¿Hay razón médica por la que NO deberías hacer ejercicio intenso?']].map(([k,q])=>`<div class="yn-wrap"><p class="ql">${q}</p><div class="yn-row" data-yr="${k}"><button class="yn ${D[k]==='si'?'yn-si':''}" data-yv="si" onclick="yn('${k}','si')">Sí</button><button class="yn ${D[k]==='no'?'yn-no':''}" data-yv="no" onclick="yn('${k}','no')">No</button></div></div>`).join('')}
+    <div class="g2"><div class="field"><label>Medicamentos actuales</label><input id="medicamentos" placeholder="metformina, losartán, levotiroxina..." value="${D.medicamentos||''}"></div><div class="field"><label>Cirugías previas relevantes</label><input id="cirugias" placeholder="rodilla 2019, hernia 2021..." value="${D.cirugias||''}"></div></div>`);
+
+  if(step===4)return wrap('Fase 1 · Historial','Historial deportivo y lesiones','Tu historia define tus capacidades actuales y tus riesgos. La honestidad aquí es protección, no debilidad.',`
+    <div class="field"><label>Años de experiencia entrenando regularmente</label>${cg('experiencia',[['novato','Nunca / casi nunca'],['menos1','Menos de 1 año'],['1a3','1 – 3 años'],['3a5','3 – 5 años'],['mas5','Más de 5 años'],['atleta','Atleta / toda la vida']],3,false)}</div>
+    <div class="field"><label>Modalidades practicadas</label>${cg('modalidades',[['gym','Gimnasio'],['running','Running'],['crossfit','CrossFit'],['natacion','Natación'],['ciclismo','Ciclismo'],['futbol','Fútbol / deporte'],['artes_marciales','Artes marciales'],['calistenia','Calistenia'],['yoga','Yoga / Pilates'],['hiit','HIIT / funcional'],['nada','Ninguna']],3,true)}</div>
+    <div class="field"><label>Lesiones previas o actuales</label><textarea id="lesiones_detalle" placeholder="Ej: tendinitis rotuliana izquierda activa, lumbalgia crónica leve, esguince tobillo derecho 2022, SLAP hombro derecho leve...">${D.lesiones_detalle||''}</textarea></div>
+    <div class="field"><label>Movimientos a evitar</label>${cg('evitar',[['sentadilla_profunda','Sentadilla profunda'],['peso_muerto','Peso muerto'],['press_hombro','Press hombro'],['zancadas','Zancadas'],['saltos','Saltos / impacto'],['correr','Correr'],['nada','Ninguno']],3,true)}</div>`);
+
+  if(step===5)return wrap('Fase 3 · Movilidad','Evaluación funcional · Movilidad','Hazlos ahora si puedes. Revelan compensaciones que, ignoradas, generan lesión.',`
+    <div class="principle-box">💡 Principio: Técnica antes que intensidad. Movilidad antes que carga. Cada déficit aquí es una prioridad en tu programa.</div>
+    ${[{id:'mob_sq',n:'Sentadilla profunda — Overhead Squat',i:'Levanta los brazos sobre la cabeza y realiza una sentadilla lo más profunda posible. Observa qué ocurre.',o:[['colapso','Colapso total — rodillas adentro, torso muy inclinado'],['compensa','Compensaciones notables, llego a paralelo'],['aceptable','Aceptable con ligeras compensaciones'],['buena','Buena — rodillas alineadas, torso recto'],['excelente','Excelente — profunda, estable, controlada']]},{id:'mob_hombro',n:'Flexión de hombro',i:'Estira los brazos hacia arriba junto a la cabeza. ¿Llegas completamente vertical sin arquear la espalda?',o:[['no_llego','No, hay mucha limitación'],['arco','Sí pero arqueo la espalda'],['casi','Casi, faltan pocos grados'],['completo','Sí, completamente']]},{id:'mob_tobillo',n:'Dorsiflexión de tobillo — Wall Test',i:'Parado frente a la pared, adelanta el pie e intenta tocar la pared con la rodilla sin levantar el talón.',o:[['menos5','Menos de 5 cm (muy limitado)'],['5a10','5–10 cm'],['10a15','10–15 cm'],['mas15','Más de 15 cm (bueno)']]},{id:'mob_toracica',n:'Rotación torácica',i:'Sentado, cruza los brazos al pecho y rota el tronco a cada lado. ¿Qué rango logras?',o:[['muy_limitada','Muy limitada — casi sin rotación'],['limitada','Limitada — menos de 45°'],['normal','Normal — 45 a 60°'],['buena','Buena — más de 60° cada lado']]}].map(ft=>`<div class="func-card"><div class="func-name">🔍 ${ft.n}</div><div class="func-inst">${ft.i}</div><div class="cgrid c2">${ft.o.map(([v,t])=>`<button class="cb ${D[ft.id]===v?'sel':''}" data-s="${ft.id}" data-v="${v}" onclick="single('${ft.id}','${v}')"><div class="ct" style="font-size:12px">${t}</div></button>`).join('')}</div></div>`).join('')}`);
+
+  if(step===6)return wrap('Fase 3 · Fuerza','Evaluación funcional · Fuerza','Pruebas de fuerza real. Hazlas ahora o da tu estimado más honesto.',`
+    <div class="principle-box">💡 Principio: Consistencia antes que perfección. Estos números definen el inicio, no el límite.</div>
+    ${[{id:'f_flex',n:'Flexiones seguidas sin parar',i:'Cuerpo recto, codos a ~45°, rango completo. Sin pausa.',o:[['0','0 — No puedo'],['1a5','1 a 5'],['6a10','6 a 10'],['11a20','11 a 20'],['21a30','21 a 30'],['mas30','Más de 30']]},{id:'f_dom',n:'Dominadas seguidas',i:'Brazos completamente extendidos al inicio, rango completo arriba.',o:[['0','0 — No puedo'],['1a3','1 a 3'],['4a8','4 a 8'],['9a15','9 a 15'],['16a20','16 a 20'],['mas20','Más de 20']]},{id:'f_plancha',n:'Plancha isométrica',i:'Cuerpo recto, sin caer caderas ni subir glúteos. ¿Cuánto aguantas?',o:[['menos20','Menos de 20 seg'],['20a60','20–60 seg'],['60a90','60–90 seg'],['90a120','90–120 seg'],['mas120','Más de 2 min']]},{id:'f_sq',n:'Sentadilla con peso corporal',i:'¿Puedes hacer sentadilla profunda con control, sin peso adicional?',o:[['no','No — muy limitado'],['superficial','Sí, solo superficial'],['paralelo','Sí, llego a paralelo'],['profunda','Profunda con control'],['cargado','Profunda y con carga']]}].map(ft=>`<div class="func-card"><div class="func-name">💪 ${ft.n}</div><div class="func-inst">${ft.i}</div><div class="cgrid c3">${ft.o.map(([v,t])=>`<button class="cb ${D[ft.id]===v?'sel':''}" data-s="${ft.id}" data-v="${v}" onclick="single('${ft.id}','${v}')"><div class="ct" style="font-size:12px">${t}</div></button>`).join('')}</div></div>`).join('')}`);
+
+  if(step===7)return wrap('Fase 3 · Resistencia','Evaluación funcional · Resistencia y equilibrio','Tu capacidad cardiovascular y el equilibrio determinan la base de cardio ideal para ti.',`
+    ${[{id:'c_1km',n:'1 km corriendo sin parar',i:'¿Puedes correr 1 km sin detenerte? Tiempo aproximado.',o:[['no_puedo','No puedo correr 1 km'],['mas8min','Sí, en más de 8 min'],['6a8min','Sí, en 6–8 min'],['5a6min','Sí, en 5–6 min'],['menos5min','Menos de 5 min']]},{id:'c_recup',n:'Recuperación cardíaca',i:'Después de subir escaleras rápido o trotar 2 min: ¿cuánto tardas en volver a respiración normal?',o:[['mas5min','Más de 5 min (muy baja)'],['3a5min','3–5 min (baja)'],['1a3min','1–3 min (moderada)'],['menos1min','Menos de 1 min (buena)']]},{id:'eq_uni',n:'Equilibrio unipodal',i:'Párate en un solo pie, ojos abiertos. ¿Cuánto aguantas sin apoyo?',o:[['menos10','Menos de 10 seg'],['10a20','10–20 seg'],['20a30','20–30 seg'],['mas30','Más de 30 seg']]}].map(ft=>`<div class="func-card"><div class="func-name">🏃 ${ft.n}</div><div class="func-inst">${ft.i}</div><div class="cgrid c2">${ft.o.map(([v,t])=>`<button class="cb ${D[ft.id]===v?'sel':''}" data-s="${ft.id}" data-v="${v}" onclick="single('${ft.id}','${v}')"><div class="ct" style="font-size:12px">${t}</div></button>`).join('')}</div></div>`).join('')}
+    <div class="field"><label>Condición física — autoevaluación</label>${cg('condicion_gral',[['muy_bajo','Muy baja'],['bajo','Baja'],['moderada','Moderada'],['buena','Buena'],['muy_buena','Muy buena'],['atletica','Atlética']],3,false)}</div>`);
+
+  if(step===8)return wrap('Fase 1 · Estilo de vida','Sueño y recuperación','La recuperación es donde sucede el progreso. Sin sueño suficiente no hay adaptación posible.',`
+    <div class="principle-box">🧠 Walker (Por Qué Dormimos): menos de 7h reduce la síntesis proteica, eleva el cortisol y destruye las adaptaciones del entrenamiento. El sueño es el anabólico más potente que existe — y es gratis.</div>
+    ${SR('horas_sueno',[{v:0,l:'<4h'},{v:1,l:'4–5h'},{v:2,l:'5–6h'},{v:3,l:'6–7h'},{v:4,l:'7–8h'},{v:5,l:'8–9h'},{v:6,l:'>9h'}],'Horas de sueño promedio por noche',null,null)}
+    ${SR('calidad_sueno',[1,2,3,4,5,6,7,8,9,10].map(n=>({v:n,l:String(n)})),'Calidad subjetiva del sueño','😴 pésimo','😊 excelente')}
+    ${SR('fatiga_manana',[1,2,3,4,5,6,7,8,9,10].map(n=>({v:n,l:String(n)})),'Fatiga al despertar','😊 muy fresco','😩 muy agotado')}
+    <div class="field"><label>Problemas de sueño</label>${cg('prob_sueno',[['ninguno','Sin problemas'],['insomnio','Insomnio'],['despertar','Me despierto de noche'],['apnea','Apnea / ronquidos'],['horario_irregular','Horario irregular'],['no_reparador','No es reparador'],['pantallas','Pantallas hasta tarde']],3,true)}</div>`);
+
+  if(step===9)return wrap('Fase 1 · Psicología','Estrés, motivación y adherencia','El principal obstáculo no suele ser el entrenamiento — es la adherencia. La psicología importa tanto como el programa.',`
+    ${SR('estres',[1,2,3,4,5,6,7,8,9,10].map(n=>({v:n,l:String(n)})),'Nivel de estrés laboral y personal actual','😌 sin estrés','🔥 máximo estrés')}
+    ${SR('motivacion',[1,2,3,4,5,6,7,8,9,10].map(n=>({v:n,l:String(n)})),'Motivación actual para comenzar/mantener el programa','😐 cero','💪 muy motivado')}
+    <div class="field"><label>¿Por qué has dejado de entrenar antes?</label>${cg('razones_dejo',[['falta_tiempo','Falta de tiempo'],['perdida_motivacion','Pérdida de motivación'],['lesion','Lesión'],['sin_resultados','Sin resultados'],['aburrimiento','Aburrimiento'],['trabajo_viajes','Trabajo / viajes'],['nunca','Nunca lo he dejado'],['sin_guia','Sin guía clara']],2,true)}</div>
+    <div class="field"><label>¿Qué te mantendría en el plan esta vez?</label>${cg('motivadores',[['resultados_visibles','Ver resultados rápido'],['seguimiento','Seguimiento y feedback'],['variedad','Variedad y entretenimiento'],['metas_claras','Metas claras y medibles'],['rutinas_cortas','Rutinas cortas y eficientes'],['entender','Entender el porqué'],['comunidad','Comunidad / compañía']],2,true)}</div>
+    <div class="field"><label>Consumo de alcohol</label>${cg('alcohol',[['nunca','Nunca'],['ocasional','Ocasional'],['1a2','1–2×/semana'],['3a4','3–4×/semana'],['diario','Diario']],3,false)}</div>`);
+
+  if(step===10)return wrap('Fase 8 · Nutrición','Hábitos nutricionales','Sin nutrición alineada, el entrenamiento pierde hasta 40% de su efectividad.',`
+    <div class="g2">
+      <div class="field"><label>Comidas al día</label>${cg('comidas',[['1a2','1–2'],['3','3'],['4','4'],['5plus','5+'],['ayuno','Ayuno IF'],['variable','Variable']],2,false)}</div>
+      <div class="field"><label>Hidratación diaria</label>${cg('agua',[['menos1','<1 L'],['1a1_5','1–1.5 L'],['1_5a2','1.5–2 L'],['2a3','2–3 L'],['mas3','>3 L']],2,false)}</div>
+    </div>
+    <div class="field"><label>Tipo de alimentación / restricciones</label>${cg('dieta',[['ninguna','Sin restricciones'],['vegetariano','Vegetariano'],['vegano','Vegano'],['sin_gluten','Sin gluten'],['sin_lacteos','Sin lácteos'],['keto','Keto / low carb'],['alto_proteina','Alta proteína']],3,true)}</div>
+    <div class="field"><label>¿Comes antes de entrenar?</label>${cg('pre_workout',[['siempre','Siempre'],['a_veces','A veces'],['ayunas','En ayunas']],3,false)}</div>
+    ${SR('disp_nutri',[1,2,3,4,5,6,7,8,9,10].map(n=>({v:n,l:String(n)})),'Disposición para cambiar hábitos de alimentación','😐 nada','🙌 totalmente')}
+    <div class="field"><label>Suplementos actuales</label><input id="suplementos" placeholder="proteína, creatina, vitamina D, omega 3..." value="${D.suplementos||''}"></div>`);
+
+  if(step===11)return wrap('Fase 5 · Contexto','Tiempo y recursos de entrenamiento','El mejor plan es el que puedes cumplir con tu vida real, no con la vida ideal.',`
+    ${SR('dias',[1,2,3,4,5,6,7].map(n=>({v:n,l:n+'d'})),'Días a la semana disponibles para entrenar',null,null)}
+    <div class="field"><label>Tiempo disponible por sesión</label>${cg('duracion',[['20_30','20–30 min'],['30_45','30–45 min'],['45_60','45–60 min'],['60_75','60–75 min'],['75_90','75–90 min'],['mas90','>90 min']],3,false)}</div>
+    <div class="field"><label>Lugar de entrenamiento</label>${cg('lugar',[['gym_completo','Gym completo'],['gym_basico','Gym básico'],['casa_sin','Casa sin equipo'],['casa_con','Casa con equipo'],['box_cf','Box CrossFit'],['parque','Parque / exterior'],['piscina','Piscina']],3,true)}</div>
+    <div class="field"><label>Equipo disponible en casa</label><input id="equipo" placeholder="mancuernas 20kg, barra dominadas, bandas, TRX, kettlebell 16kg..." value="${D.equipo||''}"></div>
+    <div class="field"><label>Información adicional importante</label><textarea id="info_extra" placeholder="Alergias, condiciones médicas adicionales, viajes frecuentes, limitaciones de horario, contexto familiar o laboral relevante...">${D.info_extra||''}</textarea></div>`);
+
+  if(step===12)return wrap('Fase 4 · Diagnóstico','Diagnóstico final y prioridades','Las últimas preguntas activan el motor de diagnóstico profundo del sistema.',`
+    <div class="field"><label>Zonas con dolor actual</label>${cg('dolor_zonas',[['sin_dolor','Sin dolor'],['lumbar','Lumbar'],['cervical','Cervical'],['rodilla','Rodilla'],['hombro','Hombro'],['tobillo','Tobillo / pie'],['cadera','Cadera'],['codo_muneca','Codo / muñeca'],['otro','Otro']],3,true)}</div>
+    ${SR('nivel_dolor',[0,1,2,3,4,5,6,7,8,9,10].map(n=>({v:n,l:String(n)})),'Nivel de dolor promedio hoy (0 = sin dolor)','0 sin dolor','10 máximo dolor')}
+    <div class="field"><label>El principal obstáculo entre tú y tu objetivo</label>${cg('obstaculo',[['falta_tiempo','Falta de tiempo real'],['no_se','No sé qué hacer'],['constancia','Me cuesta la constancia'],['dolor_lesion','Dolor / lesión recurrente'],['exceso_peso','Exceso de peso'],['estres_cronico','Estrés crónico'],['mal_sueno','Mal sueño / recuperación'],['mala_nutri','Mala alimentación'],['sin_objetivo','Sin objetivo claro']],2,false)}</div>
+    ${SR('compromiso',[1,2,3,4,5,6,7,8,9,10].map(n=>({v:n,l:String(n)})),'Si el plan es excelente, ¿qué tan comprometido estarás?','poco comprometido','100% comprometido')}
+    <div class="mission-box"><div class="mission-label">Listo para generar tu plan</div><div class="mission-text">El sistema analizará tu perfil completo a través de las 10 fases del Agente e integrará todo el conocimiento especializado para crear tu plan maestro único.</div></div>`);
+
+  return '';
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function back(){saveStep();if(step>0){step--;render();}}
+function next(){saveStep();if(step<T-1){step++;render();}else{generate();}}
+
+// ── GENERATE ───────────────────────────────────────────────────────────────
+async function generate(){
+  const parqPos=['parq1','parq2','parq3','parq4','parq5','parq6','parq7','parq8'].some(k=>D[k]==='si');
+  const imc=D.peso&&D.estatura?(parseFloat(D.peso)/((parseFloat(D.estatura)/100)**2)).toFixed(1):'N/D';
+  const horasSueno=['<4h','4–5h','5–6h','6–7h','7–8h','8–9h','>9h'][D.horas_sueno]||'N/D';
+  const today=new Date().toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('phase-chip').textContent='Generando Plan Maestro...';
+  document.getElementById('prog').style.width='100%';
+  document.getElementById('content').innerHTML=`
+    <div class="gen-wrap">
+      <div class="gen-ring"></div>
+      <h2 class="gen-title">Procesando tu evaluación completa</h2>
+      <p class="gen-sub">El Agente está analizando tu perfil a través de las 10 fases del sistema, integrando fisiología, biomecánica, nutrición y psicología del comportamiento.</p>
+      <ul class="gen-steps">
+        <li class="done"><div class="dot-s"></div>Perfil antropométrico y PAR-Q+ procesado</li>
+        <li class="done"><div class="dot-s"></div>Evaluación funcional analizada</li>
+        <li class="done"><div class="dot-s"></div>Cuello de botella identificado</li>
+        <li class="active"><div class="dot-s"></div>Construyendo programa 8 semanas...</li>
+        <li><div class="dot-s"></div>Calculando nutrición y macros...</li>
+        <li><div class="dot-s"></div>Diseñando protocolo de recuperación...</li>
+        <li><div class="dot-s"></div>Generando estrategia de adherencia...</li>
+      </ul>
+    </div>`;
+
+  const prompt=`Eres el mejor Agente Integral de Acondicionamiento Humano del mundo. Respondes en español. Eres directo, honesto y profundamente científico.
+
+MISIÓN: "Guiar a cada persona hacia su mejor versión física, respetando su contexto, su salud, sus objetivos y su sostenibilidad a largo plazo."
+
+PRINCIPIOS RECTORES (aplícalos en CADA decisión de prescripción):
+1. Salud antes que rendimiento
+2. Técnica antes que intensidad
+3. Consistencia antes que perfección
+4. Progresión antes que agotamiento
+5. Individualización antes que estandarización
+6. Educación antes que dependencia
+7. Sostenibilidad antes que resultados rápidos
+
+════════════════════════════════════
+EVALUACIÓN COMPLETA
+════════════════════════════════════
+
+FASE 1 — PERFILADO INICIAL
+Nombre: ${D.nombre||'Cliente'} | Edad: ${D.edad} | Sexo: ${D.sexo_bio} | Ocupación: ${D.ocupacion} | Horario: ${D.horario}
+
+ANTROPOMETRÍA:
+Peso: ${D.peso}kg | Estatura: ${D.estatura}cm | IMC: ${imc}
+Cintura: ${D.cintura||'N/D'}cm | Cadera: ${D.cadera||'N/D'}cm | Brazo: ${D.brazo||'N/D'}cm | Muslo: ${D.muslo||'N/D'}cm | %Grasa estimado: ${D.grasa_est||'N/D'}
+
+FASE 2 — OBJETIVO:
+Principal: ${D.objetivo||'N/D'} | Plazo: ${D.plazo||'N/D'} | Evento/fecha: ${D.evento_fecha||'Sin fecha'}
+No funcionó antes: ${(D.no_funciono||[]).join(', ')||'N/D'}
+
+SALUD — PAR-Q+:
+${parqPos?'⚠️ RESPUESTAS POSITIVAS — adaptar con precaución':'✅ Sin contraindicaciones detectadas'}
+Positivas: ${['parq1','parq2','parq3','parq4','parq5','parq6','parq7','parq8'].filter(k=>D[k]==='si').join(', ')||'ninguna'}
+Medicamentos: ${D.medicamentos||'Ninguno'} | Cirugías: ${D.cirugias||'Ninguna'}
+
+HISTORIAL: Experiencia: ${D.experiencia||'N/D'} | Modalidades: ${(D.modalidades||[]).join(', ')||'Ninguna'}
+Lesiones: ${D.lesiones_detalle||'Ninguna'} | Evitar: ${(D.evitar||[]).join(', ')||'Ninguno'}
+
+FASE 3 — EVALUACIÓN FUNCIONAL:
+MOVILIDAD: Sentadilla overhead: ${D.mob_sq||'N/D'} | Hombro: ${D.mob_hombro||'N/D'} | Tobillo: ${D.mob_tobillo||'N/D'} | Torácica: ${D.mob_toracica||'N/D'}
+FUERZA: Flexiones: ${D.f_flex||'N/D'} | Dominadas: ${D.f_dom||'N/D'} | Plancha: ${D.f_plancha||'N/D'} | Sentadilla: ${D.f_sq||'N/D'}
+RESISTENCIA: 1km: ${D.c_1km||'N/D'} | Recuperación cardíaca: ${D.c_recup||'N/D'} | Equilibrio unipodal: ${D.eq_uni||'N/D'}
+Condición autoevaluada: ${D.condicion_gral||'N/D'}
+
+ESTILO DE VIDA:
+Sueño: ${horasSueno} | Calidad sueño: ${D.calidad_sueno||'N/D'}/10 | Fatiga mañana: ${D.fatiga_manana||'N/D'}/10
+Problemas sueño: ${(D.prob_sueno||[]).join(', ')||'Ninguno'}
+Estrés: ${D.estres||'N/D'}/10 | Motivación: ${D.motivacion||'N/D'}/10
+Razones abandono: ${(D.razones_dejo||[]).join(', ')||'N/D'}
+Motivadores: ${(D.motivadores||[]).join(', ')||'N/D'}
+Alcohol: ${D.alcohol||'N/D'}
+
+FASE 8 — NUTRICIÓN:
+Comidas/día: ${D.comidas||'N/D'} | Hidratación: ${D.agua||'N/D'} | Dieta: ${(D.dieta||[]).join(', ')||'Sin restricciones'}
+Pre-entreno: ${D.pre_workout||'N/D'} | Disposición cambio nutricional: ${D.disp_nutri||'N/D'}/10
+Suplementos: ${D.suplementos||'Ninguno'}
+
+FASE 5 — RECURSOS:
+Días: ${D.dias||'N/D'}/semana | Duración: ${D.duracion||'N/D'} | Lugar: ${(D.lugar||[]).join(', ')||'N/D'} | Equipo: ${D.equipo||'N/D'}
+Info adicional: ${D.info_extra||'Ninguna'}
+
+FASE 4 — DIAGNÓSTICO FINAL:
+Dolor zonas: ${(D.dolor_zonas||[]).join(', ')||'Sin dolor'} | Nivel dolor: ${D.nivel_dolor!==undefined?D.nivel_dolor+'/10':'N/D'}
+Obstáculo principal: ${D.obstaculo||'N/D'} | Compromiso: ${D.compromiso||'N/D'}/10
+
+════════════════════════════════════
+PLAN MAESTRO PERSONALIZADO
+════════════════════════════════════
+
+Genera el plan COMPLETO con TODAS estas secciones. Usa el nombre del cliente. Sé MUY específico — números reales, ejercicios concretos, no generalidades. Usa tablas markdown donde sea útil (especialmente en el programa de entrenamiento).
+
+## DIAGNÓSTICO INTEGRAL
+- Composición corporal: interpreta IMC en ESTE contexto específico (no solo el número)
+- Capacidades funcionales: qué puede y qué NO puede hacer hoy (sé directo)
+- **EL CUELLO DE BOTELLA PRINCIPAL**: qué es lo que MÁS limita el progreso (una sola cosa, la más importante)
+- Alertas de salud y lesión con implicaciones prácticas específicas
+- Tabla: expectativa del cliente vs realidad fisiológica (con números)
+
+## PROGRAMA DE ENTRENAMIENTO — SEMANAS 1 A 8
+Aplica los 8 patrones fundamentales: empuje horizontal, empuje vertical, jalón horizontal, jalón vertical, dominante de rodilla, dominante de cadera, transporte de cargas y core.
+- Nombre y filosofía del programa
+- Tabla de estructura semanal (qué día, qué enfoque, duración)
+- SEMANAS 1–2: tabla completa de cada sesión con ejercicio, series×reps, descanso, RPE, notas personalizadas
+- SEMANAS 3–4: tabla de progresiones
+- SEMANAS 5–6: tabla de progresiones
+- SEMANA 7: protocolo de deload con parámetros específicos
+- SEMANA 8: re-test con metas vs inicio
+- Adaptaciones específicas para cada lesión mencionada
+
+## MOVILIDAD Y CALENTAMIENTO
+- Rutina de movilidad diaria 10–15 min (ejercicios específicos con series y duración)
+- Calentamiento específico pre-entrenamiento
+
+## PLAN NUTRICIONAL
+- TDEE estimado (con la fórmula que uses, muestra el cálculo)
+- Objetivo calórico con déficit/superávit justificado
+- Proteína en g/kg y total gramos diarios
+- Distribución de macros en gramos
+- Tabla de timing nutricional (antes, durante, después)
+- Lista de alimentos recomendados por categoría
+- Recomendaciones de suplementación si aplica
+
+## PROTOCOLO DE SUEÑO Y RECUPERACIÓN
+- Si hay déficit: plan de higiene del sueño con acciones específicas
+- Protocolo de recuperación activa (días de descanso)
+- Cuándo y cómo hacer deload (criterios)
+- Señales de sobreentrenamiento a vigilar
+
+## ESTRATEGIA DE ADHERENCIA Y PSICOLOGÍA
+- Análisis de sus razones históricas de abandono y cómo superarlas específicamente
+- Sistema de hábitos basado en su perfil motivacional
+- Métricas de seguimiento semanal simples (Fase 9)
+- Plan de contingencia para días de baja motivación
+
+## INDICADORES DE PROGRESO — FASES 9 Y 10
+- Tabla: qué medir, cómo medirlo, cada cuánto
+- Objetivos específicos a 30, 60 y 90 días
+- Criterios para ajustar el plan
+
+## PRIORIDADES ESTA SEMANA
+Los 3 cambios más impactantes, en orden de importancia. Específicos, accionables, con fecha.
+
+INSTRUCCIÓN CRÍTICA DE COMPLETITUD: Tienes 16000 tokens disponibles — úsalos todos si es necesario. Debes completar el 100% de estas secciones SIN EXCEPCIÓN: Diagnóstico Integral, Programa semanas 1-8 completo, Movilidad y Calentamiento, Plan Nutricional con cálculos, Protocolo de Sueño y Recuperación, Estrategia de Adherencia, Indicadores de Progreso, y Prioridades esta semana. Si detectas que te estás extendiendo demasiado en una sección, sé más conciso pero NUNCA omitas ninguna sección. El plan DEBE tener todas las partes para ser útil.
+
+Termina con un párrafo de motivación genuina basado en sostenibilidad.`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:24000,messages:[{role:'user',content:prompt}]})
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Error API '+res.status);}
+    const data=await res.json();
+    const text=data.content?.map(b=>b.text||'').join('')||'Error al procesar.';
+    showPlan(text,imc,today);
+  }catch(err){
+    document.getElementById('content').innerHTML=`
+      <div class="error-box"><strong>Error al conectar:</strong><br>${err.message}<br><br>Verifica tu API key y créditos en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+      <button class="btn-next" onclick="step=T-1;render()">← Reintentar</button>`;
+  }
+}
+
+// ── SHOW PLAN ──────────────────────────────────────────────────────────────
+function showPlan(text,imc,today){
+  // Convert markdown to clean HTML
+  let html=text
+    .replace(/^#{1,2} (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^---+$/gm,'<hr>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>');
+
+  // Convert markdown tables to HTML tables
+  html=html.replace(/(\|.+\|\n)+/g,match=>{
+    const rows=match.trim().split('\n').filter(r=>!r.match(/^\|[\s\-:|]+\|$/));
+    if(rows.length<2)return match;
+    const [head,...body]=rows;
+    const th=head.split('|').filter(c=>c.trim()).map(c=>`<th>${c.trim()}</th>`).join('');
+    const tb=body.map(r=>{const tds=r.split('|').filter(c=>c.trim()).map(c=>`<td>${c.trim()}</td>`).join('');return`<tr>${tds}</tr>`;}).join('');
+    return`<table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table>`;
+  });
+
+  // Wrap remaining paragraphs
+  html=html.replace(/\n{2,}/g,'</p><p>').replace(/^(?!<[hut])/gm,'');
+  html='<p>'+html+'</p>';
+  html=html.replace(/<p>\s*<\/p>/g,'').replace(/<p>(<[hut])/g,'$1').replace(/(<\/[hut][^>]*>)<\/p>/g,'$1');
+
+  document.getElementById('phase-chip').textContent='Plan Maestro Generado ✓';
+  document.getElementById('content').innerHTML=`
+    <div class="result-wrap">
+      <div class="result-cover">
+        <div class="result-eyebrow">Plan Maestro Personalizado · Agente de Acondicionamiento Humano</div>
+        <div class="result-name">Plan de ${D.nombre||'Tu cliente'}</div>
+        <div class="result-date">${today} · ${D.edad} años · ${D.sexo_bio||''}</div>
+        <div class="result-badges">
+          <span class="rbadge rb-green">🎯 ${(D.objetivo||'').replace(/_/g,' ')}</span>
+          <span class="rbadge rb-blue">📅 ${D.dias||'?'} días/semana · ${(D.duracion||'?').replace('_','–')}</span>
+          <span class="rbadge rb-amber">⚖️ IMC ${imc}</span>
+          ${parseInt(D.nivel_dolor)>3?`<span class="rbadge rb-red">⚠️ Dolor activo ${D.nivel_dolor}/10</span>`:''}
+          ${['parq1','parq2','parq3','parq4','parq5','parq6','parq7','parq8'].some(k=>D[k]==='si')?'<span class="rbadge rb-red">🏥 Alertas PAR-Q+</span>':''}
+        </div>
+      </div>
+      <div class="result-body">${html}</div>
+      <div class="action-row">
+        <button class="btn-act btn-print" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+        <button class="btn-act btn-copy" onclick="copyPlan()">📋 Copiar texto</button>
+        <button class="btn-act btn-new" onclick="step=0;D={};render()">↺ Nueva evaluación</button>
+      </div>
+    </div>`;
+}
+
+function copyPlan(){
+  const b=document.querySelector('.result-body');
+  if(b)navigator.clipboard.writeText(b.innerText).then(()=>{
+    const btn=event.target;btn.textContent='✓ Copiado';
+    setTimeout(()=>btn.textContent='📋 Copiar texto',2000);
+  });
+}
+</script>
+</body>
+</html>
