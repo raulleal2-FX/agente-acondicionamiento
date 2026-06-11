@@ -298,7 +298,7 @@ function SR(key,vals,lbl,l1,l2){return`<div class="scale-wrap"><p class="ql">${l
 function cg(key,items,cols,multi_){return`<div class="cgrid c${cols}">${items.map(([v,t,s])=>`<button class="cb ${(multi_?(D[key]||[]).includes(v):D[key]===v)?'sel':''}" data-${multi_?'m':'s'}="${key}" data-v="${v}" onclick="${multi_?'multi':'single'}('${key}','${v}')"><div class="ct">${t}</div>${s?`<div class="cs">${s}</div>`:''}</button>`).join('')}</div>`;}
 
 // ── SAVE ───────────────────────────────────────────────────────────────────
-const FIELDS={0:['nombre','edad','ocupacion'],1:['peso','estatura','cintura','cadera','brazo','muslo'],2:['evento_fecha'],3:['medicamentos','cirugias'],4:['lesiones_detalle'],10:['suplementos'],11:['equipo','info_extra']};
+const FIELDS={0:['nombre','edad','ocupacion'],1:['peso','estatura','cintura','cadera','brazo','muslo'],2:['evento_fecha','intencion_hoy'],3:['medicamentos','cirugias'],4:['lesiones_detalle'],10:['suplementos'],11:['equipo','info_extra']};
 function saveStep(){(FIELDS[step]||[]).forEach(k=>{const e=document.getElementById(k);if(e)D[k]=e.value;});}
 
 // ── DOTS ───────────────────────────────────────────────────────────────────
@@ -348,6 +348,28 @@ function buildPage(){
   if(step===2)return wrap('Fase 2 · Objetivo','¿Qué quieres lograr realmente?','Tu objetivo declarado y tu objetivo real pueden ser distintos. Aquí lo exploramos con honestidad.',`
     <div class="mission-box"><div class="mission-label">Misión del sistema</div><div class="mission-text">"Guiar a cada persona hacia su mejor versión física, respetando su contexto, su salud, sus objetivos y su sostenibilidad a largo plazo."</div></div>
     <div class="field"><label>Objetivo principal</label>${cg('objetivo',[['perdida_grasa','Pérdida de grasa','Reducir % grasa, composición'],['hipertrofia','Hipertrofia','Ganar músculo y tamaño'],['fuerza','Fuerza máxima','Squat, deadlift — números'],['salud','Salud general','Vivir más y mejor'],['rendimiento_hibrido','Rendimiento híbrido','Fuerza + resistencia'],['hyrox','HYROX','Competición funcional'],['crossfit','CrossFit','WODs y movimientos'],['running','Running','5K / 10K / media / maratón'],['reacondicionamiento','Reacondicionamiento','Volver tras inactividad'],['rehabilitacion','Rehabilitación','Post-lesión'],['adulto_mayor','Adulto mayor','Funcionalidad y longevidad'],['calistenia','Calistenia','Planche, muscle-up, L-sit']],2,false)}</div>
+
+    <div class="field">
+      <label>¿Hay una zona de tu cuerpo en la que quieras enfocarte o tonificar más? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint)">(opcional — selecciona todas las que apliquen)</span></label>
+      <div class="principle-box" style="margin-bottom:12px;font-style:normal">✨ Si indicas una zona específica, el sistema la profundizará con anatomía, biomecánica, los ejercicios más efectivos según la literatura y progresiones detalladas.</div>
+      ${cg('zona_enfoque',[
+        ['gluteos','🍑 Glúteos','Glúteo mayor, medio y menor'],
+        ['abdomen','🔥 Abdomen / Core','Recto, oblicuos, transverso'],
+        ['espalda','🏔 Espalda','Dorsales, trapecios, romboides'],
+        ['pecho','💥 Pecho','Pectoral mayor y menor'],
+        ['brazos','💪 Brazos','Bíceps y tríceps'],
+        ['hombros','🔱 Hombros','Deltoides — anchura y redondez'],
+        ['piernas','🦵 Piernas','Cuádriceps, isquios, pantorrillas'],
+        ['cintura','⚡ Cintura / Talle','Reducción y definición lateral'],
+        ['ninguna','⚖️ Cuerpo completo','Desarrollo equilibrado']
+      ],3,true)}
+    </div>
+
+    <div class="field">
+      <label>¿Qué quieres lograr o sentir HOY en este proceso? <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint)">(intención del día)</span></label>
+      <textarea id="intencion_hoy" style="min-height:72px" placeholder="Ej: Quiero sentir que mis glúteos trabajaron de verdad. / Quiero aprender a hacer sentadilla correcta. / Quiero desahogar el estrés de la semana. / Quiero entender qué comer para perder grasa sin pasar hambre...">${D.intencion_hoy||''}</textarea>
+    </div>
+
     <div class="field"><label>Plazo para ver resultados significativos</label>${cg('plazo',[['1mes','1 mes'],['3meses','3 meses'],['6meses','6 meses'],['1ano','1 año'],['sin_prisa','Sin prisa']],3,false)}</div>
     <div class="field"><label>Evento o fecha objetivo (opcional)</label><input id="evento_fecha" placeholder="HYROX marzo, vacaciones julio, sin fecha..." value="${D.evento_fecha||''}"></div>
     <div class="field"><label>¿Qué has intentado que no funcionó?</label>${cg('no_funciono',[['dietas_yoyo','Dietas yo-yo'],['rutinas_abandonadas','Rutinas abandonadas'],['sin_resultados','Sin resultados visibles'],['exceso_cardio','Solo cardio'],['muchas_lesiones','Muchas lesiones'],['falta_guia','Sin guía clara'],['nada_previo','Nada previo']],2,true)}</div>`);
@@ -423,7 +445,9 @@ function next(){saveStep();if(step<T-1){step++;render();}else{generate();}}
 // ── GENERATE ───────────────────────────────────────────────────────────────
 async function generate(){
   const parqPos=['parq1','parq2','parq3','parq4','parq5','parq6','parq7','parq8'].some(k=>D[k]==='si');
-  const imc=D.peso&&D.estatura?(parseFloat(D.peso)/((parseFloat(D.estatura)/100)**2)).toFixed(1):'N/D';
+  // Validate estatura — if < 130 or > 230 likely entered in wrong field
+  const estaturaReal = D.estatura && parseFloat(D.estatura) >= 130 && parseFloat(D.estatura) <= 230 ? parseFloat(D.estatura) : null;
+  const imc = D.peso && estaturaReal ? (parseFloat(D.peso)/(( estaturaReal/100)**2)).toFixed(1) : 'VERIFICAR ESTATURA';
   const horasSueno=['<4h','4–5h','5–6h','6–7h','7–8h','8–9h','>9h'][D.horas_sueno]||'N/D';
   const today=new Date().toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'});
 
@@ -473,6 +497,9 @@ FASE 2 — OBJETIVO:
 Principal: ${D.objetivo||'N/D'} | Plazo: ${D.plazo||'N/D'} | Evento/fecha: ${D.evento_fecha||'Sin fecha'}
 No funcionó antes: ${(D.no_funciono||[]).join(', ')||'N/D'}
 
+ZONA(S) DE ENFOQUE ESPECÍFICO: ${(D.zona_enfoque||[]).join(', ')||'Sin zona específica declarada'}
+INTENCIÓN DEL DÍA: ${D.intencion_hoy||'No especificada'}
+
 SALUD — PAR-Q+:
 ${parqPos?'⚠️ RESPUESTAS POSITIVAS — adaptar con precaución':'✅ Sin contraindicaciones detectadas'}
 Positivas: ${['parq1','parq2','parq3','parq4','parq5','parq6','parq7','parq8'].filter(k=>D[k]==='si').join(', ')||'ninguna'}
@@ -521,6 +548,16 @@ Genera el plan COMPLETO con TODAS estas secciones. Usa el nombre del cliente. S�
 - Alertas de salud y lesión con implicaciones prácticas específicas
 - Tabla: expectativa del cliente vs realidad fisiológica (con números)
 
+## ZONA DE ENFOQUE ESPECIAL${(D.zona_enfoque||[]).length > 0 && !(D.zona_enfoque||[]).includes('ninguna') ? ` — PROFUNDIZACIÓN: ${(D.zona_enfoque||[]).join(', ').toUpperCase()}` : ''}
+${(D.zona_enfoque||[]).length > 0 && !(D.zona_enfoque||[]).includes('ninguna') ? `El cliente indicó zona(s) de enfoque específico. Dedica una sección completa a esto con:
+- Anatomía de los músculos involucrados (Strength Training Anatomy — Delavier)
+- Por qué estos músculos responden a ciertos patrones y no a otros
+- Los 5 ejercicios más efectivos para esta zona según evidencia científica con series/reps/tempo específicos
+- Errores más comunes que impiden el desarrollo de esta zona
+- Progresión específica de 12 semanas para esta zona
+- Nutrición específica para el objetivo de esta zona (más proteína en días que se trabaja, timing)
+- Intención del día del cliente: "${D.intencion_hoy||''}" — asegúrate de que el plan de hoy la satisfaga directamente` : 'El cliente no indicó zona específica — desarrollar plan de composición corporal equilibrada.'}
+
 ## PROGRAMA DE ENTRENAMIENTO — SEMANAS 1 A 8
 Aplica los 8 patrones fundamentales: empuje horizontal, empuje vertical, jalón horizontal, jalón vertical, dominante de rodilla, dominante de cadera, transporte de cargas y core.
 - Nombre y filosofía del programa
@@ -565,7 +602,7 @@ Aplica los 8 patrones fundamentales: empuje horizontal, empuje vertical, jalón 
 ## PRIORIDADES ESTA SEMANA
 Los 3 cambios más impactantes, en orden de importancia. Específicos, accionables, con fecha.
 
-INSTRUCCIÓN CRÍTICA DE COMPLETITUD: Tienes 16000 tokens disponibles — úsalos todos si es necesario. Debes completar el 100% de estas secciones SIN EXCEPCIÓN: Diagnóstico Integral, Programa semanas 1-8 completo, Movilidad y Calentamiento, Plan Nutricional con cálculos, Protocolo de Sueño y Recuperación, Estrategia de Adherencia, Indicadores de Progreso, y Prioridades esta semana. Si detectas que te estás extendiendo demasiado en una sección, sé más conciso pero NUNCA omitas ninguna sección. El plan DEBE tener todas las partes para ser útil.
+INSTRUCCIÓN CRÍTICA DE COMPLETITUD: Tienes 24000 tokens disponibles — úsalos todos si es necesario. Debes completar el 100% de estas secciones SIN EXCEPCIÓN: Diagnóstico Integral, Programa semanas 1-8 completo, Movilidad y Calentamiento, Plan Nutricional con cálculos, Protocolo de Sueño y Recuperación, Estrategia de Adherencia, Indicadores de Progreso, y Prioridades esta semana. Si detectas que te estás extendiendo demasiado en una sección, sé más conciso pero NUNCA omitas ninguna sección. El plan DEBE tener todas las partes para ser útil.
 
 Termina con un párrafo de motivación genuina basado en sostenibilidad.`;
 
@@ -624,6 +661,7 @@ function showPlan(text,imc,today){
           <span class="rbadge rb-green">🎯 ${(D.objetivo||'').replace(/_/g,' ')}</span>
           <span class="rbadge rb-blue">📅 ${D.dias||'?'} días/semana · ${(D.duracion||'?').replace('_','–')}</span>
           <span class="rbadge rb-amber">⚖️ IMC ${imc}</span>
+          ${imc==='VERIFICAR ESTATURA'?'<span class="rbadge rb-red">⚠️ Verificar estatura ingresada</span>':''}
           ${parseInt(D.nivel_dolor)>3?`<span class="rbadge rb-red">⚠️ Dolor activo ${D.nivel_dolor}/10</span>`:''}
           ${['parq1','parq2','parq3','parq4','parq5','parq6','parq7','parq8'].some(k=>D[k]==='si')?'<span class="rbadge rb-red">🏥 Alertas PAR-Q+</span>':''}
         </div>
